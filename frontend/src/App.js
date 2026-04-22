@@ -2,10 +2,13 @@ import * as ReactRouterDom from "react-router-dom";
 import AdminProtectedRoute from "./layouts/AdminProtectedRoute";
 import UserProtectedRoute from "./layouts/UserProtectedRoute";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import BlogsPage from "./pages/BlogsPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import InfoPage from "./pages/InfoPage";
+import KnowledgePage from "./pages/KnowledgePage";
 import LoginPage from "./pages/LoginPage";
+import SettingsPage from "./pages/SettingsPage";
 import WebsitesPage from "./pages/WebsitesPage";
 
 const { BrowserRouter, Navigate, Route, Routes } = ReactRouterDom;
@@ -38,15 +41,38 @@ function App() {
           element={withUserProtection(
             <InfoPage
               title="Intergrations"
-              description="Configure external services used for publishing, analytics, notifications, and automation."
+              description="Connect external services used for publishing, analytics, notifications, and automation."
               sections={[
                 {
-                  heading: "Integration categories",
-                  body: "Group integrations by purpose to simplify maintenance and troubleshooting.",
+                  heading: "Before you start",
+                  body: "Collect all required credentials first to avoid setup interruptions.",
                   items: [
-                    "CMS and content distribution platforms",
-                    "Analytics and reporting providers",
-                    "Messaging and alerting tools",
+                    "API key or OAuth client details",
+                    "Callback/redirect URL for your environment",
+                    "Workspace or project identifier from the provider dashboard",
+                    "Required permission scopes (publish, read analytics, notifications)",
+                  ],
+                },
+                {
+                  heading: "Integration steps",
+                  body: "Follow this sequence for each provider to keep setup consistent and traceable.",
+                  items: [
+                    "Step 1: Open the provider admin panel and create an app/integration.",
+                    "Step 2: Copy client credentials and allowed redirect URLs.",
+                    "Step 3: Add credentials to your secure environment settings.",
+                    "Step 4: Connect from this dashboard and run the authorization flow.",
+                    "Step 5: Verify with a test action (publish, fetch analytics, or send notification).",
+                    "Step 6: Save connection status and owner notes for future maintenance.",
+                  ],
+                },
+                {
+                  heading: "Post-setup validation",
+                  body: "Run a quick health check after connecting to confirm data and permissions are correct.",
+                  items: [
+                    "Confirm connection state is active in this workspace",
+                    "Test both read and write actions where applicable",
+                    "Check logs for permission or webhook delivery errors",
+                    "Document renewal/rotation date for credentials",
                   ],
                 },
                 {
@@ -59,75 +85,15 @@ function App() {
         />
         <Route
           path="/knowledge"
-          element={withUserProtection(
-            <InfoPage
-              title="Knowledge"
-              description="Store reusable playbooks, writing guides, and operational notes for your content team."
-              sections={[
-                {
-                  heading: "What to document",
-                  body: "Capture repeatable workflows so new contributors can move quickly.",
-                  items: [
-                    "Content brief templates and checklists",
-                    "SEO review and approval guidelines",
-                    "Escalation procedures for incidents",
-                  ],
-                },
-                {
-                  heading: "Maintenance cadence",
-                  body: "Review and refresh articles on a regular schedule to keep guidance accurate.",
-                },
-              ]}
-            />
-          )}
+          element={withUserProtection(<KnowledgePage />)}
         />
         <Route
           path="/blogs"
-          element={withUserProtection(
-            <InfoPage
-              title="Blogs"
-              description="Plan, review, and publish blog posts with consistent quality and release timing."
-              sections={[
-                {
-                  heading: "Editorial workflow",
-                  body: "Move each article through drafting, reviewing, and publishing stages with clear ownership.",
-                },
-                {
-                  heading: "Performance focus",
-                  body: "Measure outcomes by combining traffic, engagement, and conversion metrics.",
-                  items: [
-                    "Monitor page views and reading time",
-                    "Track keyword movement after publishing",
-                    "Compare conversion performance by topic",
-                  ],
-                },
-              ]}
-            />
-          )}
+          element={withUserProtection(<BlogsPage />)}
         />
         <Route
           path="/settings"
-          element={withUserProtection(
-            <InfoPage
-              title="Settings"
-              description="Control workspace preferences, notification rules, and account-level behavior."
-              sections={[
-                {
-                  heading: "Workspace controls",
-                  body: "Set defaults for timezone, approval policy, and publishing behavior.",
-                },
-                {
-                  heading: "User preferences",
-                  body: "Customize personal options to improve daily workflow.",
-                  items: [
-                    "Notification frequency and channels",
-                    "Theme and interface preferences",
-                    "Default filters for dashboard views",
-                  ],
-                },
-              ]}
-            />
-          )}
+          element={withUserProtection(<SettingsPage />)}
         />
         <Route
           path="/about"

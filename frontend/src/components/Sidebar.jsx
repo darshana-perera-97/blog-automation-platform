@@ -1,10 +1,11 @@
 import * as ReactRouterDom from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { getUserSessionId } from "../lib/userAuth";
+import { clearUserSession, getUserSessionId } from "../lib/userAuth";
+import { getSelectedWebsiteScope, setSelectedWebsiteScope } from "../lib/websiteScope";
 import { fetchUserWebsites } from "../lib/websitesApi";
 import BrandIcon from "./BrandIcon";
 
-const { Link, useLocation } = ReactRouterDom;
+const { Link, useLocation, useNavigate } = ReactRouterDom;
 
 const sidebarLinks = [
   { label: "Dashboard", to: "/dashboard" },
@@ -17,6 +18,7 @@ const sidebarLinks = [
 
 function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [websites, setWebsites] = useState([]);
   const [selectedWebsite, setSelectedWebsite] = useState("");
   const [isLoadingWebsites, setIsLoadingWebsites] = useState(true);
@@ -45,16 +47,23 @@ function Sidebar() {
       .then((sites) => {
         if (cancelled) return;
         setWebsites(sites);
-        if (sites[0]?.id != null) {
+        const storedWebsiteId = getSelectedWebsiteScope();
+        const hasStored = sites.some((site) => String(site.id) === String(storedWebsiteId));
+        if (hasStored) {
+          setSelectedWebsite(String(storedWebsiteId));
+        } else if (sites[0]?.id != null) {
           setSelectedWebsite(String(sites[0].id));
+          setSelectedWebsiteScope(sites[0].id);
         } else {
           setSelectedWebsite("");
+          setSelectedWebsiteScope("");
         }
       })
       .catch(() => {
         if (cancelled) return;
         setWebsites([]);
         setSelectedWebsite("");
+        setSelectedWebsiteScope("");
       })
       .finally(() => {
         if (!cancelled) {
@@ -67,8 +76,13 @@ function Sidebar() {
     };
   }, []);
 
+  const handleLogout = () => {
+    clearUserSession();
+    navigate("/login");
+  };
+
   return (
-    <aside className="sticky top-3 z-30 mb-4 h-auto w-full overflow-y-auto rounded-3xl border border-[#f1f5f9] bg-white p-4 shadow-[0_15px_35px_rgba(148,163,184,0.18)] sm:p-5 lg:fixed lg:left-5 lg:top-5 lg:mb-0 lg:h-[calc(100vh-2.5rem)] lg:w-[240px]">
+    <aside className="sticky top-3 z-30 mb-4 flex h-auto w-full flex-col overflow-y-auto rounded-3xl border border-[#f1f5f9] bg-white p-4 shadow-[0_15px_35px_rgba(148,163,184,0.18)] sm:p-5 lg:fixed lg:left-5 lg:top-5 lg:mb-0 lg:h-[calc(100vh-2.5rem)] lg:w-[240px]">
       <div className="mb-8 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-lime-400 via-emerald-500 to-green-600 text-white shadow-sm sm:h-11 sm:w-11">
           <BrandIcon />
@@ -117,7 +131,10 @@ function Sidebar() {
             </div>
             <select
               value={selectedWebsite}
-              onChange={(event) => setSelectedWebsite(event.target.value)}
+              onChange={(event) => {
+                setSelectedWebsite(event.target.value);
+                setSelectedWebsiteScope(event.target.value);
+              }}
               disabled={isLoadingWebsites || websites.length === 0}
               className="w-full appearance-none rounded-xl border border-slate-200/90 bg-white/95 py-2.5 pl-9 pr-9 text-[11px] font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100/70 disabled:text-slate-400 sm:text-xs"
             >
@@ -156,11 +173,16 @@ function Sidebar() {
           );
         })}
       </nav>
-      <div className="mt-5 rounded-2xl border border-[#e2e8f0] bg-gradient-to-br from-[#ffffff] to-[#f8fafc] p-4 text-slate-700 shadow-sm sm:mt-6 lg:mt-10">
-        <p className="text-sm font-semibold sm:text-base">Need Help?</p>
-        <p className="mt-1 text-xs text-slate-500 sm:text-sm">Please check our docs</p>
-        <button className="mt-3 w-full rounded-lg bg-slate-800 py-2 text-[10px] font-bold text-white transition hover:bg-slate-700 sm:text-xs">DOCUMENTATION</button>
-      </div>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+      >
+        <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+        </svg>
+        Logout
+      </button>
     </aside>
   );
 }

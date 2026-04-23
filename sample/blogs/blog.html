@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>has Blog</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #0f172a; }
+    .container { max-width: 860px; margin: 0 auto; padding: 28px 16px 48px; }
+    .back { display: inline-block; margin-bottom: 18px; color: #334155; text-decoration: none; font-size: 14px; }
+    .hero { width: 100%; border-radius: 12px; margin: 0 0 20px; object-fit: cover; }
+    article { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; line-height: 1.7; }
+    h1,h2,h3 { line-height: 1.35; color: #0f172a; }
+    p, li { color: #1e293b; }
+    ul { padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <a class="back" href="./index.html">← Back to all blogs</a>
+    <div id="blog-root"></div>
+  </main>
+  <script>
+    const root = document.getElementById("blog-root");
+    const params = new URLSearchParams(window.location.search);
+    const apiBase = params.get("apiBase") || "http://localhost:4321";
+    const userId = params.get("userId") || "1";
+    const websiteId = params.get("websiteId") || "1";
+    const slug = params.get("slug") || "";
+
+    const toAssetUrl = (value) => {
+      if (!value) return "";
+      if (/^https?:\/\//i.test(value)) return value;
+      const normalized = String(value).startsWith("/") ? String(value) : `/${value}`;
+      return `${apiBase}${normalized}`;
+    };
+
+    const mdToHtml = (markdown) => {
+      const lines = String(markdown || "").split("\n");
+      const html = [];
+      let inList = false;
+      lines.forEach((rawLine) => {
+        const line = rawLine.trim();
+        if (!line) {
+          if (inList) {
+            html.push("</ul>");
+            inList = false;
+          }
+          return;
+        }
+        if (/^###\s+/.test(line)) {
+          if (inList) { html.push("</ul>"); inList = false; }
+          html.push(`<h3>${line.replace(/^###\s+/, "")}</h3>`);
+          return;
+        }
+        if (/^##\s+/.test(line)) {
+          if (inList) { html.push("</ul>"); inList = false; }
+          html.push(`<h2>${line.replace(/^##\s+/, "")}</h2>`);
+          return;
+        }
+        if (/^#\s+/.test(line)) {
+          if (inList) { html.push("</ul>"); inList = false; }
+          html.push(`<h1>${line.replace(/^#\s+/, "")}</h1>`);
+          return;
+        }
+        if (/^[-*]\s+/.test(line)) {
+          if (!inList) {
+            html.push("<ul>");
+            inList = true;
+          }
+          html.push(`<li>${line.replace(/^[-*]\s+/, "")}</li>`);
+          return;
+        }
+        if (inList) { html.push("</ul>"); inList = false; }
+        html.push(`<p>${line}</p>`);
+      });
+      if (inList) html.push("</ul>");
+      return html.join("");
+    };
+
+    if (!slug) {
+      root.innerHTML = "<p style=\"color:#ef4444\">Blog slug missing in URL.</p>";
+    } else {
+      fetch(`${apiBase}/public/blogs/latest?userId=${encodeURIComponent(userId)}&websiteId=${encodeURIComponent(websiteId)}&slug=${encodeURIComponent(slug)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const blog = data?.blog;
+          if (!blog) {
+            root.innerHTML = "<p style=\"color:#64748b\">Blog not found. Check slug/userId/websiteId params.</p>";
+            return;
+          }
+          root.innerHTML = `
+            ${blog.featuredImage ? `<img class="hero" src="${toAssetUrl(blog.featuredImage)}" alt="${blog.title || ""}" />` : ""}
+            <article>${mdToHtml(blog.content || "")}</article>
+          `;
+        })
+        .catch(() => {
+          root.innerHTML = "<p style=\"color:#ef4444\">Failed to load blog from backend API.</p>";
+        });
+    }
+  </script>
+</body>
+</html>

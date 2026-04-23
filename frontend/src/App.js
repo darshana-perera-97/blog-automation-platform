@@ -6,6 +6,7 @@ import BlogsPage from "./pages/BlogsPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import InfoPage from "./pages/InfoPage";
+import IntegrationsPage from "./pages/IntegrationsPage";
 import KnowledgePage from "./pages/KnowledgePage";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -38,50 +39,7 @@ function App() {
         />
         <Route
           path="/intergrations"
-          element={withUserProtection(
-            <InfoPage
-              title="Intergrations"
-              description="Connect external services used for publishing, analytics, notifications, and automation."
-              sections={[
-                {
-                  heading: "Before you start",
-                  body: "Collect all required credentials first to avoid setup interruptions.",
-                  items: [
-                    "API key or OAuth client details",
-                    "Callback/redirect URL for your environment",
-                    "Workspace or project identifier from the provider dashboard",
-                    "Required permission scopes (publish, read analytics, notifications)",
-                  ],
-                },
-                {
-                  heading: "Integration steps",
-                  body: "Follow this sequence for each provider to keep setup consistent and traceable.",
-                  items: [
-                    "Step 1: Open the provider admin panel and create an app/integration.",
-                    "Step 2: Copy client credentials and allowed redirect URLs.",
-                    "Step 3: Add credentials to your secure environment settings.",
-                    "Step 4: Connect from this dashboard and run the authorization flow.",
-                    "Step 5: Verify with a test action (publish, fetch analytics, or send notification).",
-                    "Step 6: Save connection status and owner notes for future maintenance.",
-                  ],
-                },
-                {
-                  heading: "Post-setup validation",
-                  body: "Run a quick health check after connecting to confirm data and permissions are correct.",
-                  items: [
-                    "Confirm connection state is active in this workspace",
-                    "Test both read and write actions where applicable",
-                    "Check logs for permission or webhook delivery errors",
-                    "Document renewal/rotation date for credentials",
-                  ],
-                },
-                {
-                  heading: "Security best practices",
-                  body: "Rotate API keys regularly and use least-privilege scopes for all service accounts.",
-                },
-              ]}
-            />
-          )}
+          element={withUserProtection(<IntegrationsPage />)}
         />
         <Route
           path="/knowledge"

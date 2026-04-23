@@ -399,6 +399,50 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === "GET" && pathname === "/public/blogs/published") {
+    const userIdParam = requestUrl.searchParams.get("userId");
+    const websiteIdParam = normalizeWebsiteId(requestUrl.searchParams.get("websiteId"));
+
+    if (!userIdParam || websiteIdParam === null) {
+      res.writeHead(400, { "Content-Type": "application/json", ...corsHeaders });
+      res.end(JSON.stringify({ success: false, message: "userId and websiteId are required" }));
+      return;
+    }
+
+    const blogs = readBlogs()
+      .filter(
+        (item) =>
+          String(item.userId) === String(userIdParam) &&
+          normalizeWebsiteId(item.websiteId) === websiteIdParam &&
+          String(item.status || "") === "published"
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.publishedAt || b.createdAt || 0).getTime() -
+          new Date(a.publishedAt || a.createdAt || 0).getTime()
+      )
+      .map((item) => ({
+        id: item.id,
+        title: item.title || "",
+        slug: toSlug(item.slug || item.title),
+        excerpt: String(item.content || "")
+          .replace(/^#{1,6}\s+/gm, "")
+          .replace(/\*\*(.*?)\*\*/g, "$1")
+          .replace(/\*(.*?)\*/g, "$1")
+          .replace(/`(.*?)`/g, "$1")
+          .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 180),
+        featuredImage: item.featuredImage || "",
+        publishedAt: item.publishedAt || item.createdAt || "",
+      }));
+
+    res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders });
+    res.end(JSON.stringify({ success: true, blogs }));
+    return;
+  }
+
   const assetMatch = pathname.match(/^\/data\/Assets\/([^/]+)$/);
   if (req.method === "GET" && assetMatch) {
     const safeName = path.basename(assetMatch[1]);
@@ -1283,6 +1327,65 @@ Avoid adding any readable text in the image.`;
             status: "published",
             publishedAt: new Date().toISOString(),
           };
+          writeBlogs(blogs);
+
+          res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders });
+          res.end(JSON.stringify({ success: true, blog: blogs[blogIndex] }));
+        } catch {
+          res.writeHead(400, { "Content-Type": "application/json", ...corsHeaders });
+          res.end(JSON.stringify({ success: false, message: "Invalid JSON body" }));
+        }
+      });
+      return;
+    }
+
+    const unpublishBlogMatch = pathname.match(/^\/users\/([^/]+)\/blogs\/([^/]+)\/unpublish$/);
+    if (unpublishBlogMatch) {
+      const userIdParam = unpublishBlogMatch[1];
+      const blogIdParam = unpublishBlogMatch[2];
+      let body = "";
+
+      req.on("data", (chunk) => {
+        body += chunk;
+      });
+
+      req.on("end", () => {
+        try {
+          const users = readUsers();
+          const rawUser = users.find((u) => String(u.userId) === String(userIdParam));
+          if (!rawUser) {
+            res.writeHead(404, { "Content-Type": "application/json", ...corsHeaders });
+            res.end(JSON.stringify({ success: false, message: "User not found" }));
+            return;
+          }
+          const { user } = syncStarterExpiryStatus(users, rawUser);
+          if (String(user.status || "").toLowerCase() !== "active") {
+            res.writeHead(403, { "Content-Type": "application/json", ...corsHeaders });
+            res.end(JSON.stringify({ success: false, message: "Your account is inactive." }));
+            return;
+          }
+
+          const payload = JSON.parse(body || "{}");
+          const websiteId = normalizeWebsiteId(payload.websiteId);
+          const blogs = readBlogs();
+          const blogIndex = blogs.findIndex(
+            (item) =>
+              String(item.id) === String(blogIdParam) &&
+              String(item.userId) === String(userIdParam) &&
+              (websiteId === null || normalizeWebsiteId(item.websiteId) === websiteId)
+          );
+
+          if (blogIndex === -1) {
+            res.writeHead(404, { "Content-Type": "application/json", ...corsHeaders });
+            res.end(JSON.stringify({ success: false, message: "Blog not found" }));
+            return;
+          }
+
+          blogs[blogIndex] = {
+            ...blogs[blogIndex],
+            status: "created",
+          };
+          delete blogs[blogIndex].publishedAt;
           writeBlogs(blogs);
 
           res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders });

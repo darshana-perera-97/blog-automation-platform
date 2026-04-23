@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>has Blogs</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #0f172a; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 16px; }
+    h1 { margin: 0 0 8px; }
+    .meta { margin: 0 0 24px; color: #64748b; font-size: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .card-link { color: inherit; text-decoration: none; display: block; cursor: pointer; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); transition: transform 0.15s ease; }
+    .card-link:hover .card { transform: translateY(-2px); }
+    .thumb { width: 100%; height: 160px; object-fit: cover; background: #e2e8f0; display: block; }
+    .content { padding: 14px; }
+    .title { margin: 0 0 8px; font-size: 18px; line-height: 1.35; }
+    .excerpt { margin: 0 0 12px; color: #475569; font-size: 14px; line-height: 1.5; }
+    .date { margin: 0; color: #94a3b8; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>has Blogs</h1>
+    <p class="meta">Domain: hms.com</p>
+    <section class="grid" id="blog-grid"></section>
+  </main>
+  <script>
+    const apiBase = "http://localhost:4321";
+    const userId = "1";
+    const websiteId = "1";
+    const grid = document.getElementById("blog-grid");
+    const toAssetUrl = (value) => {
+      if (!value) return "";
+      if (/^https?:\/\//i.test(value)) return value;
+      const normalized = String(value).startsWith("/") ? String(value) : `/${value}`;
+      return `${apiBase}${normalized}`;
+    };
+    fetch(`${apiBase}/public/blogs/published?userId=${encodeURIComponent(userId)}&websiteId=${encodeURIComponent(websiteId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const blogs = Array.isArray(data?.blogs) ? data.blogs : [];
+        if (!blogs.length) {
+          grid.innerHTML = "<p style=\"grid-column:1/-1;color:#64748b\">No published blogs yet.</p>";
+          return;
+        }
+        grid.innerHTML = blogs.map((blog) => `
+          <a class="card-link" href="./blog.html?slug=${encodeURIComponent(blog.slug || "")}&userId=${encodeURIComponent(userId)}&websiteId=${encodeURIComponent(websiteId)}&apiBase=${encodeURIComponent(apiBase)}">
+            <article class="card">
+              ${blog.featuredImage ? `<img class="thumb" src="${toAssetUrl(blog.featuredImage)}" alt="${blog.title}" />` : ""}
+              <div class="content">
+                <h2 class="title">${blog.title || ""}</h2>
+                <p class="excerpt">${blog.excerpt || ""}</p>
+                <p class="date">${blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString() : ""}</p>
+              </div>
+            </article>
+          </a>
+        `).join("");
+      })
+      .catch(() => {
+        grid.innerHTML = "<p style=\"grid-column:1/-1;color:#ef4444\">Failed to load blogs from backend API.</p>";
+      });
+
+    grid.addEventListener("click", (event) => {
+      const card = event.target.closest(".card-link");
+      if (!card) return;
+      const href = card.getAttribute("href");
+      if (!href) return;
+      window.location.href = href;
+    });
+  </script>
+</body>
+</html>

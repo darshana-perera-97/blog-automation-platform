@@ -68,7 +68,7 @@ export async function fetchBlogsToWrite(userId, websiteId) {
 
 export async function publishBlog(userId, blogId, payload = {}) {
   const response = await fetch(`${API_BASE}/users/${userId}/blogs/${blogId}/publish`, {
-    method: "POST",
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -76,6 +76,21 @@ export async function publishBlog(userId, blogId, payload = {}) {
 
   if (!response.ok) {
     throw new Error(result.message || "Failed to publish blog");
+  }
+
+  return result.blog || null;
+}
+
+export async function unpublishBlog(userId, blogId, payload = {}) {
+  const response = await fetch(`${API_BASE}/users/${userId}/blogs/${blogId}/unpublish`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to unpublish blog");
   }
 
   return result.blog || null;

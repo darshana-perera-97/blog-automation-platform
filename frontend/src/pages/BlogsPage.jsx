@@ -5,6 +5,7 @@ import {
   fetchUpcomingBlogs,
   fetchUserBlogs,
   publishBlog,
+  unpublishBlog,
 } from "../lib/blogsApi";
 import { getUserSessionId } from "../lib/userAuth";
 import { getSelectedWebsiteScope, subscribeWebsiteScope } from "../lib/websiteScope";
@@ -30,6 +31,7 @@ function BlogsPage() {
   const [websiteId, setWebsiteId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [publishingBlogId, setPublishingBlogId] = useState("");
+  const [unpublishingBlogId, setUnpublishingBlogId] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -103,6 +105,27 @@ function BlogsPage() {
       setError(publishError.message || "Could not publish blog");
     } finally {
       setPublishingBlogId("");
+    }
+  };
+
+  const handleUnpublishBlog = async (blogId) => {
+    const sessionUserId = getUserSessionId();
+    if (!sessionUserId) {
+      setError("Login required");
+      return;
+    }
+    try {
+      setUnpublishingBlogId(String(blogId));
+      const updated = await unpublishBlog(sessionUserId, blogId, { websiteId: websiteId || null });
+      if (!updated) return;
+      setBlogs((prev) =>
+        prev.map((item) => (String(item.id) === String(blogId) ? updated : item))
+      );
+      setSelectedBlog((prev) => (prev && String(prev.id) === String(blogId) ? null : prev));
+    } catch (unpublishError) {
+      setError(unpublishError.message || "Could not unpublish blog");
+    } finally {
+      setUnpublishingBlogId("");
     }
   };
 
@@ -285,6 +308,19 @@ function BlogsPage() {
                 <p className="mt-2 text-sm font-semibold leading-6 text-slate-800 sm:text-base">{blog.title}</p>
               </div>
               <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-sm text-slate-600">{blog.content}</p>
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleUnpublishBlog(blog.id);
+                  }}
+                  disabled={unpublishingBlogId === String(blog.id)}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-60 sm:text-sm"
+                >
+                  {unpublishingBlogId === String(blog.id) ? "Unpublishing..." : "Unpublish"}
+                </button>
+              </div>
             </article>
           ))}
         </div>
@@ -335,6 +371,16 @@ function BlogsPage() {
             ) : null}
             <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
               <pre className="whitespace-pre-wrap font-sans text-sm leading-6 text-slate-700">{selectedBlog.content}</pre>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => handleUnpublishBlog(selectedBlog.id)}
+                disabled={unpublishingBlogId === String(selectedBlog.id)}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-60 sm:text-sm"
+              >
+                {unpublishingBlogId === String(selectedBlog.id) ? "Unpublishing..." : "Unpublish"}
+              </button>
             </div>
           </article>
         </div>
